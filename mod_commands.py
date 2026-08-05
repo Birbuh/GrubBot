@@ -5,6 +5,7 @@ from typing import Any
 import discord
 from discord.ext import commands
 from discord.member import Member
+from discord.user import User
 
 from other_addons import ADMIN_ID, check_for_perms, check_if_muted, delay_func
 
@@ -373,26 +374,49 @@ async def mute(
         await delay_func(fail_msg.delete, 5)
 
 
-async def ban(msg: commands.Context, bot: commands.Bot, member: Member | None, reason: str | None = None, mod_logs: dict[str, Any] = {}):
+async def ban(msg, bot: commands.Bot, member: Member | int | None, reason: str | None = None, mod_logs: dict[str, Any] = {}):
     if check_for_perms(msg.author):  # Checking if the user is from staff (has permissions).
         try:
-            if not member:
+            print(member, type(member))
+            if isinstance(member, int):
+                user = await bot.fetch_user(member)
+                await msg.guild.ban(user)
+                embed = discord.Embed(
+                    title="User Banned!",
+                    description=(
+                        f"""## Public Execution, Hooway!
+                                    \n**{user}** was banned for **{reason or "No reason provided"}** by **{msg.author}**!
+                                    \n -# Go on now, yap more. I hope there's more of you to behead..."""
+                    ),
+                    color=0x28A745,
+                )
+                await msg.reply(embed=embed)
+                await mod_logs["users"].send(embed=embed)
+                wall_of_shame = bot.fetch_channel(1534571253892120666)
+                # #TOCHANGE# for the Wall of Shame in the stable version
+                await mod_logs["users"].send(f"{user} HAS BEEN TERMINATED BECAUSE OF {reason.capitalize() if reason else 'SEVERE RULE BREAKING'}.")
+                print(user, type(user))
+            elif isinstance(member, Member):
+                await member.ban(delete_message_days=1, reason=reason)
+                await msg.guild.ban(member)
+                embed = discord.Embed(
+                    title="User Banned!",
+                    description=(
+                        f"""## Public Execution, Hooway!
+                                    \n**{member}** was banned for **{reason or "No reason provided"}** by **{msg.author}**!
+                                    \n -# Go on now, yap more. I hope there's more of you to behead..."""
+                    ),
+                    color=0x28A745,
+                )
+                await msg.reply(embed=embed)
+                await mod_logs["users"].send(embed=embed)
+                wall_of_shame = bot.fetch_channel(1534571253892120666)
+                #TOUNCOMMENT# The Wall of Shame should be only in the stable version
+                await wall_of_shame.send(
+                    f"{member.mention} HAS BEEN TERMINATED BECAUSE OF {reason.capitalize() if reason else 'SEVERE RULE BREAKING'}."
+                )
+            else:
                 await msg.reply("Please mention a member to ban.\nUsage: ?ban @member [reason (optional)]")
-                return
-            await member.ban(delete_message_days=1, reason=reason)
-            embed = discord.Embed(
-                title="User Banned!",
-                description=(
-                    f"""## Public Execution, Hooway!
-                    \n**{member}** was banned for **{reason or "No reason provided"}** by **{msg.author}**!
-                    \n -# Go on now, yap more. I hope there's more of you to behead..."""
-                ),
-                color=0x28A745,
-            )
-            await msg.reply(embed=embed)
-            await mod_logs["users"].send(embed=embed)
-            wall_of_shame = bot.fetch_channel(1529517779059740742)
-            wall_of_shame.send(f"{member.mention} HAS BEEN TERMINATED BECAUSE OF {reason.capitalize() if reason else 'SEVERE RULE BREAKING'}.")
         except Exception as e:
             await msg.reply("An error occurred! Check the terminal output for more info.")
             print(f"Exception: {e}")
@@ -406,4 +430,31 @@ async def ban(msg: commands.Context, bot: commands.Bot, member: Member | None, r
         await delay_func(fail_msg.delete, 5)
 
 
-# async def unban(msg, member: Member | None, reason=None, bot=None, mod_logs={})
+async def unban(msg, bot: commands.Bot, user_id: int | None, reason=None, mod_logs={}):
+    if check_for_perms(msg.author):  # Checking if the user is from staff (has permissions).
+        try:
+            if not user_id:
+                await msg.reply("Please specify an user's ID to unban them.\nUsage: ?unban [user_id] [reason (optional)]")
+                return
+            user_to_unban = await bot.fetch_user(user_id)
+            await msg.guild.unban(user_to_unban)
+            embed = discord.Embed(
+                title="User Banned!",
+                description=(
+                    f"""## The mercy call was answered...
+                    \n**{user_to_unban}** was unbanned for **{reason or "No reason provided"}** by **{msg.author}**!"""
+                ),
+                color=0x28A745,
+            )
+            await msg.reply(embed=embed)
+        except Exception as e:
+            await msg.reply("An error occurred! Check the terminal output for more info.")
+            print(f"Exception: {e}")
+    else:
+        embed = discord.Embed(
+            title="**Nuh uh.**",
+            description="You don't have permission to use this command.",
+            color=0xFF00F6,
+        )
+        fail_msg = await msg.reply(embed=embed)
+        await delay_func(fail_msg.delete, 5)

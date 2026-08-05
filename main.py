@@ -95,9 +95,12 @@ async def rules(msg: Any, rule: str | None = None) -> None:
 
 
 @bot.command()
-async def ban(msg: Any, member: Member | None, reason: str | None):
+async def ban(msg: Any, member: Member | int | None, reason: str | None):
     await modcmd.ban(msg, bot, member, reason, mod_logs)
-
+    
+@bot.command()
+async def unban(msg: Any, user_id: int | None, reason: str | None):
+    await modcmd.unban(msg, bot, user_id, reason, mod_logs)
 
 @bot.command()
 async def purge(msg: Any, amount: int | None = None):
