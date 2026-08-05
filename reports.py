@@ -137,9 +137,7 @@ async def on_raw_reaction_add(payload, bot: Any, mod_logs: dict[str, Any] = {}):
     # Take action
     if emoji == "✅":
         await reported_user.add_roles(mute_role, reason=reason)
-        await reported_user.send(
-            f"You have been muted at razerchess's server for 3 hours for {reason}"
-        )
+        await reported_user.send(f"You have been muted at razerchess's server for 3 hours for {reason}")
         await reporter.send("Your report have been approved")
 
         # muting part
@@ -170,9 +168,7 @@ async def on_raw_reaction_add(payload, bot: Any, mod_logs: dict[str, Any] = {}):
 
     elif emoji == "❌":
         await reporter.add_roles(mute_role, reason="Falsely reporting")
-        await reporter.send(
-            "You have been muted at razerchess's server for 6 hours for false reporting"
-        )
+        await reporter.send("You have been muted at razerchess's server for 6 hours for false reporting")
 
         # muting part
         embed = discord.Embed(

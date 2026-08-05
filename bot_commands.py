@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-import re
 from typing import Any
 
 import discord
@@ -23,7 +22,6 @@ async def contains_fancy_fonts(message: Any):
     """Handle messages with banned haracters"""
     # # Regex patterns for detecting emojis and markdown
     # EMOJI_PATTERN = re.compile(
-    #     r"<a?:\w+:\d+>|[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F700-\U0001F77F\U0001F780-\U0001F7FF\U0001F800-\U0001F8FF\U0001F900-\U0001F9FF\U0001FA00-\U0001FA6F\U0001FA70-\U0001FAFF]"
     # )
     # MARKDOWN_PATTERN = re.compile(r"(\*\*.*?\*\*|__.*?__|~~.*?~~|\*.*?\*|_.*?_)")
     # if EMOJI_PATTERN.match(message.content) or MARKDOWN_PATTERN.match(message.content):
@@ -80,8 +78,8 @@ async def spam(message: Any):
                 await message.delete()
                 await message.channel.send(f"{message.author.mention}, please don't spam!")
                 return True
-            except discord.errors.NotFound:
-                pass
+            except discord.errors.NotFound as e:
+                print(e)
 
     else:
         user_spam_count[user_id] = 0
@@ -110,16 +108,13 @@ async def automute(msg: Any, time, reason, bot: Any = None, mod_logs: Any = None
         await msg.channel.send(content="Nice try, but you are muted already. lmfao.")
         return
     else:
-        mute_role = bot.get_guild(1528934642630266900).get_role(1531352680142864587) # TODO: change it to an actual mute role. #noqa:E501
+        mute_role = bot.get_guild(1528934642630266900).get_role(1531352680142864587)  # TODO: change it to an actual mute role. #noqa:E501
         member: Any = msg.author
         await member.add_roles(mute_role)
         muted = True
         embed = discord.Embed(
             title="Automute!!!",
-            description=(
-                f"**{member}** got electrocuted by the AutoMod services! He is now muted for "
-                f"{time / 60} minutes for {reason}"
-            ),
+            description=(f"**{member}** got electrocuted by the AutoMod services! He is now muted for {time / 60} minutes for {reason}"),
             color=0xFF00F6,
         )
         automute_done_msg = await msg.channel.send(embed=embed)
@@ -169,15 +164,11 @@ async def rules(msg: Any, rule: str | None = None) -> None:
 async def helpme(msg: Any, type_of_help: str | None = None):
     if type_of_help is None:
         if not check_for_perms(msg.author):
-            await msg.reply(
-                "Please mention what I need to help you with: 1) rules  2) channel  3) roles  "
-                "4) warns "
-            )
+            await msg.reply("Please mention what I need to help you with: rules, channel, roles, warns, balance, roulette, work, or delay.")
         elif check_for_perms(msg.author):
             await msg.reply(
-                "Please mention what I need to help you with: 1) rules  2) channel  3) roles  "
-                "4) warns. Staff only: "
-                "mute, info, warn, clear, purge. "
+                "Please mention what I need to help you with: rules, channel, roles, warns, "
+                "balance, roulette, work, or delay. Staff only: mute, info, warn, clear, purge."
             )
     else:
         if not check_for_perms(msg.author):

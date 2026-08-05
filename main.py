@@ -2,10 +2,15 @@ import discord
 import re
 import os
 from typing import Any
+
+from discord.member import Member
 import events
 import bot_commands as botcmd
 import mod_commands as modcmd
 import reports as rpts
+import earning
+import operations
+import gambling_commands as gambling
 from other_addons import MOD_LOG_IDS
 from host import os_recog
 from cachetools import TTLCache
@@ -78,7 +83,6 @@ async def info(msg: Any, member: Any = None):
     await modcmd.info(msg, member)
 
 
-
 @bot.command()
 async def roles(msg: Any, member: Any = None):
     await botcmd.roles(msg, member)
@@ -88,6 +92,11 @@ async def roles(msg: Any, member: Any = None):
 async def rules(msg: Any, rule: str | None = None) -> None:
     """Usage: !rules <rule> None by default"""
     await botcmd.rules(msg, rule)
+
+
+@bot.command()
+async def ban(msg: Any, member: Member | None, reason: str | None):
+    await modcmd.ban(msg, bot, member, reason, mod_logs)
 
 
 @bot.command()
@@ -155,6 +164,70 @@ async def on_member_join(member: Any):  # Greeting message on join (in DMs)
     await new_members_channel.send(f"Welcome to the Grub Syndicate server, {member.mention}!")
     embed = discord.Embed(title=f"User {member.mention} joined the server!")
     await mod_logs["users"].send(embed=embed)
+
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def sync(message: discord.Message):
+    """Synchronizes the slash commands"""
+    await bot.tree.sync()
+    await message.reply("synced!")
+
+
+@bot.command(name="balance", aliases=("bal", "view-money"))
+async def bal_prefix(message, user: None | str = None):
+    """Shows the balance of an user
+    USAGE: {prefix}bal (user); {prefix}balance (user)
+
+    user: User you want to show balance of. If empty, the command shows yours balance.
+    """
+    await operations.bal(message, user, bot)
+
+
+@bot.tree.command(name="balance", description="View user's (or yours) balance")
+async def bal_slash(interaction, user: None | str = None):
+    """Shows the balance of an user"""
+    await operations.bal(interaction, user, bot)
+
+
+@bot.command(name="roulette", aliases=("rlt", "roulete"))
+async def rlt_prefix(message, space, bet):
+    """Plays Roulette
+    USAGE: {prefix}rlt {space} {bet}
+
+    space: On what you want to bet
+    bet: what you want to bet
+    """
+    await gambling.roulette(message, bet, space)
+
+
+@bot.tree.command(name="rlt", description="Play Roulette")
+async def rlt_slash(interaction, space: str, bet: str):
+    await gambling.roulette(interaction, bet, space)
+
+
+@bot.command(name="work")
+async def work_prefix(message):
+    """Adds some money to your balance
+    USAGE: {prefix}work
+    """
+    await earning.work(message)
+
+
+@bot.tree.command(name="work")
+async def work_slash(command):
+    await earning.work(command)
+
+
+@bot.command(name="delay")
+async def delay_prefix(msg, mode: str):
+
+    await earning.delay(msg, mode)
+
+
+@bot.tree.command(name="delay")
+async def delay_slash(msg, mode: str):
+    await earning.delay(msg, mode)
 
 
 # Load environment variables

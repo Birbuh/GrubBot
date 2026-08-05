@@ -4,19 +4,7 @@ from typing import Any
 import discord
 
 all_rules: dict[str, str] = {
-    "1": "No harassing, racism, any type of being toxic or bullying is forbidden.",
-    "2": "No selfpromo, unless Razer will agree.",
-    "3": "No NSFW",
-    "4": "Don't spam",
-    "5": "Make sure to follow Discord ToS",
-    "6": 'English only (and no other "fonts" than normal discord one) please',
-    "7": "Do not swear too much",
-    "8": "Don't write caps when unnecesary; it will be punishable.",
-    "9": (
-        "DO NOT open the tickets unless you have a valid reason - if you just want to "
-        "contact someone, that is NOT a valid reason."
-    ),
-    "10": "Reporting without a reason will be punished",
+
 }
 
 types_of_help: dict[str, str] = {
@@ -29,9 +17,12 @@ types_of_help: dict[str, str] = {
     "purge": " -> ?purge <number> (removes the number of messages above)",  # staff only
     "roles": " -> ?roles <user> (shows all roles of the user)",  # any user
     "warns": " -> ?warns (gives you your warns)",  # any user
+    "balance": " -> ?balance [user] (shows a balance; aliases: ?bal, ?view-money)",
+    "roulette": " -> ?roulette <space> <bet> (aliases: ?rlt, ?roulete)",
+    "work": " -> ?work (earns coins; subject to the work delay)",
+    "delay": " -> ?delay <on|off> (enables or disables the work delay)",
     "report": (
-        " -> ?report <user> reason (you also have to ping a message where a user broke the "
-        "rules) reporting without a normal reason will be punished"
+        " -> ?report <user> reason (you also have to ping a message where a user broke the rules) reporting without a normal reason will be punished"
     ),
     # any user
 }
@@ -41,14 +32,17 @@ member_types_of_help: dict[str, str] = {
     "channel": "https://www.youtube.com/@RazerChess",  # any user
     "roles": " -> ?roles <user> (shows all roles of the user)",  # any user
     "warns": " -> ?warns (gives you your warns)",  # any user
+    "balance": " -> ?balance [user] (shows a balance; aliases: ?bal, ?view-money)",
+    "roulette": " -> ?roulette <space> <bet> (aliases: ?rlt, ?roulete)",
+    "work": " -> ?work (earns coins; subject to the work delay)",
+    "delay": " -> ?delay <on|off> (enables or disables the work delay)",
     "report": (
-        " -> ?report <user> reason (you also have to ping a message where a user broke the "
-        "rules) reporting without a normal reason will be punished"
+        " -> ?report <user> reason (you also have to ping a message where a user broke the rules) reporting without a normal reason will be punished"
     ),
 }
 
 
-ADMIN_ID =  1529034592852508823
+ADMIN_ID = 1529034592852508823
 MOD_LOG_IDS = [1534468985272274975]
 
 

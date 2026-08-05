@@ -4,10 +4,12 @@ from typing import Any
 
 import discord
 from discord.ext import commands
-from other_addons import delay_func, check_if_muted, check_for_perms, ADMIN_ID
+from discord.member import Member
 
+from other_addons import ADMIN_ID, check_for_perms, check_if_muted, delay_func
 
 user_warns_count = {}
+TIME_CONVERT = {"s": 1, "m": 60, "h": 3600}
 
 
 # clears warns
@@ -28,9 +30,7 @@ async def lock(msg: Any):
 
     # Deny send messages permission for everyone except the role
     await channel.set_permissions(role, send_messages=True)  # Allow the role to send messages
-    await channel.set_permissions(
-        msg.guild.default_role, send_messages=False
-    )  # Deny everyone else from sending messages
+    await channel.set_permissions(msg.guild.default_role, send_messages=False)  # Deny everyone else from sending messages
 
     await msg.reply("Channel locked for everyone except the authorized role!")
 
@@ -45,9 +45,7 @@ async def unlock(msg: Any):
 
     # Restore send messages permission for everyone except the role
     await channel.set_permissions(role, send_messages=True)  # Allow the role to send messages
-    await channel.set_permissions(
-        msg.guild.default_role, send_messages=True
-    )  # Allow everyone else to send messages
+    await channel.set_permissions(msg.guild.default_role, send_messages=True)  # Allow everyone else to send messages
 
     await msg.reply("Channel unlocked for everyone!")
 
@@ -66,9 +64,7 @@ async def clear_warns(msg: Any, member: Any = None):
         await msg.reply("Please mention correct username!")
 
 
-async def send_msg(
-    msg: Any, channel_name: str | None = None, *, content: str | None = None
-) -> None:
+async def send_msg(msg: Any, channel_name: str | None = None, *, content: str | None = None) -> None:
     # Check if all parameters were provided
     if channel_name is None or content is None:
         await msg.reply("Usage: !send-msg <channel_name> <content>")
@@ -169,9 +165,7 @@ async def unmute(
             await member.remove_roles(mute_role)
             embed = discord.Embed(
                 title="User Unmuted!",
-                description="**{0}** was unmuted for **{1}** by **{2}**!".format(
-                    member, reason or "No reason provided", msg.author
-                ),
+                description="**{0}** was unmuted for **{1}** by **{2}**!".format(member, reason or "No reason provided", msg.author),
                 color=0xFF00F6,
             )
             success_msg = await msg.reply(embed=embed)
@@ -230,10 +224,7 @@ async def warn(
             json.dump(warns, warns_file)
 
         # Send confirmation message
-        await msg.reply(
-            f"{member.mention} has been warned. Total warns: {warns[name]['count']}. "
-            f"Weekly warns: {user_warns_count[name]} "
-        )
+        await msg.reply(f"{member.mention} has been warned. Total warns: {warns[name]['count']}. Weekly warns: {user_warns_count[name]} ")
         await member.send(
             f"**You've been warned in the Razerchess server for:**\n {reason}.\n\n\n "
             f"You have **{warns[name]['count']}** warns in total and "
@@ -244,15 +235,15 @@ async def warn(
 
         # checks for how long to mute
         if user_warns_count[name] % 3 == 0:
-            timeout = 10_800           # 2 hours
+            timeout = 10_800  # 2 hours
             if user_warns_count[name] // 3 == 1:
-                timeout = 10_800       # 4 hours
+                timeout = 10_800  # 4 hours
             elif user_warns_count[name] // 3 == 2:
-                timeout = 10_800 * 2   # 8 hours
+                timeout = 10_800 * 2  # 8 hours
             elif user_warns_count[name] // 3 == 3:
-                timeout = 10_800 * 4   # 12 hours
+                timeout = 10_800 * 4  # 12 hours
             elif user_warns_count[name] // 3 == 4:
-                timeout = 10_800 * 8   # 1 day
+                timeout = 10_800 * 8  # 1 day
             elif user_warns_count[name] // 3 == 5:
                 timeout = 10_800 * 16  # 2 days
             elif user_warns_count[name] // 3 == 6:
@@ -265,10 +256,7 @@ async def warn(
             # muting part
             embed = discord.Embed(
                 title="User Muted!",
-                description=(
-                    f"**{member}** was muted for {timeout / 60 / 60} hours for "
-                    "**having too much warns** !"
-                ),
+                description=(f"**{member}** was muted for {timeout / 60 / 60} hours for **having too much warns** !"),
                 color=0xFF00F6,
             )
             success_msg = await msg.reply(embed=embed)
@@ -285,9 +273,7 @@ async def warn(
                         description=f"The time for **{member}** being muted has finished!",
                         color=0xFF00F6,
                     )
-                    mute_finished_msg = await msg.channel.send(
-                        content=msg.author.mention, embed=embed
-                    )
+                    mute_finished_msg = await msg.channel.send(content=msg.author.mention, embed=embed)
                     await mod_logs["actions"].send(embed=embed)
                     await delay_func(mute_finished_msg.delete, 5)
 
@@ -296,10 +282,7 @@ async def warn(
 
             embed = discord.Embed(
                 title="User Muted!",
-                description=(
-                    f"**{member}** was muted for **{reason or 'No reason provided'}** "
-                    f"by **{msg.author}**!"
-                ),
+                description=(f"**{member}** was muted for **{reason or 'No reason provided'}** by **{msg.author}**!"),
                 color=0xFF00F6,
             )
             success_msg = await msg.reply(embed=embed)
@@ -318,26 +301,20 @@ async def mute(
     bot: Any = None,
     mod_logs: dict[str, Any] = {},
 ):
-    time_convert = {"s": 1, "m": 60, "h": 3600}
-    try:
-        if not member:
-            await msg.reply(
-                "Please mention a member to mute.\nUsage: !mute @member [time] [reason]"
-            )
-            return
-        if not timeout:
-            await msg.reply(
-                "Please mention the time to mute for (in s(econds), m(inutes) or h(ours)).\n"
-                "Usage: !mute @member [time] [reason]"
-            )
-        mute_role = bot.get_guild(1331651870107762732).get_role(1343249780322865247)
-        if check_if_muted(member):
-            await msg.reply("This member is already muted. Skill issue.")
-        else:
-            if check_for_perms(msg.author):  # Checking if the user is from staff (has permissions).
+    if check_for_perms(msg.author):  # Checking if the user is from staff (has permissions).
+        try:
+            if not member:
+                await msg.reply("Please mention a member to mute.\nUsage: !mute @member [time] [reason]")
+                return
+            if not timeout:
+                await msg.reply("Please mention the time to mute for (in s(econds), m(inutes) or h(ours)).\nUsage: !mute @member [time] [reason]")
+            mute_role = bot.get_guild(1331651870107762732).get_role(1343249780322865247)
+            if check_if_muted(member):
+                await msg.reply("This member is already muted. Skill issue.")
+            else:
                 await member.add_roles(mute_role)
                 try:
-                    timeout = int(timeout[:-1]) * time_convert[timeout[-1]]
+                    timeout = int(timeout[:-1]) * TIME_CONVERT[timeout[-1]]
                 except ValueError, KeyError:
                     await msg.reply("Invalid time format! Use formats like 10s, 5m, 2h, 1d.")
                     return
@@ -347,10 +324,9 @@ async def mute(
                     embed = discord.Embed(
                         title="User Muted!",
                         description=(
-                            f"**{member}** was muted for {timeout / 60} minutes for "
-                            f"**{reason or 'No reason provided'}** by **{msg.author}**!"
+                            f"**{member}** was muted for {timeout / 60} minutes for **{reason or 'No reason provided'}** by **{msg.author}**!"
                         ),
-                        color=0xFF00F6,
+                        color=0x28A745,
                     )
                     success_msg = await msg.reply(embed=embed)
                     await mod_logs["actions"].send(embed=embed)
@@ -364,11 +340,9 @@ async def mute(
                             embed = discord.Embed(
                                 title="User Unmuted!",
                                 description=f"The time for **{member}** being muted has finished!",
-                                color=0xFF00F6,
+                                color=0x28A745,
                             )
-                            mute_finished_msg = await msg.channel.send(
-                                content=msg.author.mention, embed=embed
-                            )
+                            mute_finished_msg = await msg.channel.send(content=msg.author.mention, embed=embed)
                             await mod_logs["actions"].send(embed=embed)
                             await delay_func(mute_finished_msg.delete, 5)
 
@@ -379,24 +353,57 @@ async def mute(
                 else:
                     embed = discord.Embed(
                         title="User Muted!",
-                        description=(
-                            f"**{member}** was muted for **{reason or 'No reason provided'}** "
-                            f"by **{msg.author}**!"
-                        ),
+                        description=(f"**{member}** was muted for **{reason or 'No reason provided'}** by **{msg.author}**!"),
                         color=0xFF00F6,
                     )
                     success_msg = await msg.reply(embed=embed)
                     await mod_logs["actions"].send(embed=embed)
                     await delay_func(success_msg.delete, 5)
-            else:
-                embed = discord.Embed(
-                    title="**Nein.**",
-                    description="You don't have permission to use this command.",
-                    color=0xFF00F6,
-                )
-                fail_msg = await msg.reply(embed=embed)
-                await delay_func(fail_msg.delete, 5)
-    except commands.errors.MemberNotFound:
-        await msg.reply("Couldn't find that user.")
-    except Exception as e:
-        await msg.reply(f"An error occurred: {str(e)}")
+        except commands.errors.MemberNotFound:
+            await msg.reply("Couldn't find that user.")
+        except Exception as e:
+            await msg.reply(f"An error occurred: {str(e)}")
+    else:
+        embed = discord.Embed(
+            title="**Nuh uh.**",
+            description="You don't have permission to use this command.",
+            color=0xFF00F6,
+        )
+        fail_msg = await msg.reply(embed=embed)
+        await delay_func(fail_msg.delete, 5)
+
+
+async def ban(msg: commands.Context, bot: commands.Bot, member: Member | None, reason: str | None = None, mod_logs: dict[str, Any] = {}):
+    if check_for_perms(msg.author):  # Checking if the user is from staff (has permissions).
+        try:
+            if not member:
+                await msg.reply("Please mention a member to ban.\nUsage: ?ban @member [reason (optional)]")
+                return
+            await member.ban(delete_message_days=1, reason=reason)
+            embed = discord.Embed(
+                title="User Banned!",
+                description=(
+                    f"""## Public Execution, Hooway!
+                    \n**{member}** was banned for **{reason or "No reason provided"}** by **{msg.author}**!
+                    \n -# Go on now, yap more. I hope there's more of you to behead..."""
+                ),
+                color=0x28A745,
+            )
+            await msg.reply(embed=embed)
+            await mod_logs["users"].send(embed=embed)
+            wall_of_shame = bot.fetch_channel(1529517779059740742)
+            wall_of_shame.send(f"{member.mention} HAS BEEN TERMINATED BECAUSE OF {reason.capitalize() if reason else 'SEVERE RULE BREAKING'}.")
+        except Exception as e:
+            await msg.reply("An error occurred! Check the terminal output for more info.")
+            print(f"Exception: {e}")
+    else:
+        embed = discord.Embed(
+            title="**Nuh uh.**",
+            description="You don't have permission to use this command.",
+            color=0xFF00F6,
+        )
+        fail_msg = await msg.reply(embed=embed)
+        await delay_func(fail_msg.delete, 5)
+
+
+# async def unban(msg, member: Member | None, reason=None, bot=None, mod_logs={})
