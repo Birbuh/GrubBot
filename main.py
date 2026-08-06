@@ -45,9 +45,7 @@ RCON_PASSWORD = os.environ["RCON_PASSWORD"]
 CHAT_CHANNEL_ID = int(os.environ["MC_CHAT_CHANNEL_ID"])
 MC_LOG_PATH = os.environ["MC_LOG_PATH"]
 MC_CHAT_PATTERN = re.compile(r"\]: <([^>]+)> (.+)$")
-MC_CHAT_PATTERN2 = re.compile(
-    r"\]: (?:\[Not Secure\] )?<([A-Za-z0-9_]{1,16})> (.*)$"
-)
+MC_CHAT_PATTERN2 = re.compile(r"\]: (?:\[Not Secure\] )?<([A-Za-z0-9_]{1,16})> (.*)$")
 MC_FORMATTING_PATTERN = re.compile(r"§[0-9A-FK-ORa-fk-or]")
 chat_watcher_task: asyncio.Task | None = None
 
@@ -165,7 +163,7 @@ async def on_ready():
     mod_logs["actions"] = await bot.fetch_channel(MOD_LOG_IDS[0])
     mod_logs["users"] = await bot.fetch_channel(MOD_LOG_IDS[0])
     mod_logs["other"] = await bot.fetch_channel(MOD_LOG_IDS[0])
-    
+
     global chat_watcher_task
 
     if chat_watcher_task is None or chat_watcher_task.done():
@@ -333,9 +331,13 @@ async def run_rcon(command: str):
     finally:
         await client.close()
 
+
 @bot.command(name="mc-run")
 async def mc_run(msg, *, command: str) -> None:
     """Run a Minecraft console command through RCON."""
+    if not botcmd.check_for_perms(msg.author):
+        await msg.reply("You don't have permission to use this command.")
+        return
     try:
         response = await run_rcon(command)
     except Exception as error:
@@ -386,14 +388,12 @@ async def watch_minecraft_chat() -> None:
                     await asyncio.sleep(0.2)
                     continue
 
-                
                 match = MC_CHAT_PATTERN.search(line)
 
                 if not match:
                     match2 = MC_CHAT_PATTERN2.search(line)
                     if not match2:
                         continue
-                    
 
                 player_name, content = match.groups() if match else match2.groups() if match2 else ("sth didnt work", "sth didnt work")
                 content = MC_FORMATTING_PATTERN.sub("", content)
