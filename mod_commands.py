@@ -5,7 +5,6 @@ from typing import Any
 import discord
 from discord.ext import commands
 from discord.member import Member
-from discord.user import User
 
 from other_addons import ADMIN_ID, check_for_perms, check_if_muted, delay_func
 
@@ -392,9 +391,9 @@ async def ban(msg, bot: commands.Bot, member: Member | int | None, reason: str |
                 )
                 await msg.reply(embed=embed)
                 await mod_logs["users"].send(embed=embed)
-                wall_of_shame = bot.fetch_channel(1534571253892120666)
-                # #TOCHANGE# for the Wall of Shame in the stable version
-                await mod_logs["users"].send(f"{user} HAS BEEN TERMINATED BECAUSE OF {reason.capitalize() if reason else 'SEVERE RULE BREAKING'}.")
+                wall_of_shame = await bot.fetch_channel(1534571253892120666)
+                #TOCHANGE# for the Wall of Shame in the stable version
+                # await mod_logs["users"].send(f"{user} HAS BEEN TERMINATED BECAUSE OF {reason.capitalize() if reason else 'SEVERE RULE BREAKING'}.")
                 print(user, type(user))
             elif isinstance(member, Member):
                 await member.ban(delete_message_days=1, reason=reason)
@@ -410,11 +409,11 @@ async def ban(msg, bot: commands.Bot, member: Member | int | None, reason: str |
                 )
                 await msg.reply(embed=embed)
                 await mod_logs["users"].send(embed=embed)
-                wall_of_shame = bot.fetch_channel(1534571253892120666)
+                wall_of_shame = await bot.fetch_channel(1534571253892120666)
                 #TOUNCOMMENT# The Wall of Shame should be only in the stable version
-                await wall_of_shame.send(
-                    f"{member.mention} HAS BEEN TERMINATED BECAUSE OF {reason.capitalize() if reason else 'SEVERE RULE BREAKING'}."
-                )
+                # await wall_of_shame.send(
+                #     f"{member.mention} HAS BEEN TERMINATED BECAUSE OF {reason.capitalize() if reason else 'SEVERE RULE BREAKING'}."
+                # )
             else:
                 await msg.reply("Please mention a member to ban.\nUsage: ?ban @member [reason (optional)]")
         except Exception as e:

@@ -1,21 +1,26 @@
-import discord
-import re
+import asyncio
+import json
 import os
+import re
 from typing import Any
 
-from discord.member import Member
-import events
-import bot_commands as botcmd
-import mod_commands as modcmd
-import reports as rpts
-import earning
-import operations
-import gambling_commands as gambling
-from other_addons import MOD_LOG_IDS
-from host import os_recog
+import aiofiles
+import aiomcrcon
+import discord
 from cachetools import TTLCache
 from discord.ext import commands as _commands
+from discord.member import Member
 from dotenv import load_dotenv
+
+import bot_commands as botcmd
+import earning
+import events
+import gambling_commands as gambling
+import mod_commands as modcmd
+import operations
+import reports as rpts
+from host import os_recog
+from other_addons import MOD_LOG_IDS
 
 commands: Any = _commands
 
@@ -29,6 +34,22 @@ pattern = re.compile(r"[\uFF01-\uFF5E\u2000-\u200F\u2028-\u202F\uFEFF]")
 spam_cache = TTLCache(maxsize=200, ttl=7)
 mod_logs: dict[str, Any] = {}
 IS_STABLE, BOT_PREFIX = os_recog()
+
+# Load environment variables
+load_dotenv()
+
+# server stuff
+RCON_HOST = os.getenv("RCON_HOST", "127.0.0.1")
+RCON_PORT = int(os.getenv("RCON_PORT", "25575"))
+RCON_PASSWORD = os.environ["RCON_PASSWORD"]
+CHAT_CHANNEL_ID = int(os.environ["MC_CHAT_CHANNEL_ID"])
+MC_LOG_PATH = os.environ["MC_LOG_PATH"]
+MC_CHAT_PATTERN = re.compile(r"\]: <([^>]+)> (.+)$")
+MC_CHAT_PATTERN2 = re.compile(
+    r"\]: (?:\[Not Secure\] )?<([A-Za-z0-9_]{1,16})> (.*)$"
+)
+MC_FORMATTING_PATTERN = re.compile(r"§[0-9A-FK-ORa-fk-or]")
+chat_watcher_task: asyncio.Task | None = None
 
 # Function to check if a user is staff.
 
@@ -97,10 +118,12 @@ async def rules(msg: Any, rule: str | None = None) -> None:
 @bot.command()
 async def ban(msg: Any, member: Member | int | None, reason: str | None):
     await modcmd.ban(msg, bot, member, reason, mod_logs)
-    
+
+
 @bot.command()
 async def unban(msg: Any, user_id: int | None, reason: str | None):
     await modcmd.unban(msg, bot, user_id, reason, mod_logs)
+
 
 @bot.command()
 async def purge(msg: Any, amount: int | None = None):
@@ -142,6 +165,14 @@ async def on_ready():
     mod_logs["actions"] = await bot.fetch_channel(MOD_LOG_IDS[0])
     mod_logs["users"] = await bot.fetch_channel(MOD_LOG_IDS[0])
     mod_logs["other"] = await bot.fetch_channel(MOD_LOG_IDS[0])
+    
+    global chat_watcher_task
+
+    if chat_watcher_task is None or chat_watcher_task.done():
+        chat_watcher_task = asyncio.create_task(
+            watch_minecraft_chat(),
+            name="minecraft-chat-watcher",
+        )
 
 
 @bot.event
@@ -156,7 +187,26 @@ async def on_message_edit(before: Any, after: Any):
 
 @bot.event
 async def on_message(message: Any):
+    if message.author.bot:  # Ignore bots
+        return
     await events.on_message(message, bot, spam_cache)
+    if message.channel.id == CHAT_CHANNEL_ID:
+        content = message.clean_content.strip()
+
+        if content and not content.startswith(bot.command_prefix):
+            # Minecraft chat doesn't handle multiline Discord messages nicely.
+            content = " ".join(content.splitlines())
+            content = content[:300]
+
+            minecraft_message = {"text": f"[Discord] {message.author.display_name}: {content}"}
+
+            try:
+                await run_rcon(f"tellraw @a {json.dumps(minecraft_message)}")
+            except Exception as error:
+                print(f"Discord → Minecraft failed: {error}")
+
+    # Required, otherwise @bot.command commands stop working.
+    await bot.process_commands(message)
 
 
 @bot.event
@@ -164,8 +214,8 @@ async def on_member_join(member: Any):  # Greeting message on join (in DMs)
     if member.bot:  # Ignore bots
         return
     new_members_channel = bot.get_channel(1529517779059740742)
-    await new_members_channel.send(f"Welcome to the Grub Syndicate server, {member.mention}!")
-    embed = discord.Embed(title=f"User {member.mention} joined the server!")
+    await new_members_channel.send(f"Welcome to the Grub Syndicate, {member.mention}!")
+    embed = discord.Embed(title=f"User {member.name} ({member.display_name}) joined the server!")
     await mod_logs["users"].send(embed=embed)
 
 
@@ -177,10 +227,10 @@ async def sync(message: discord.Message):
     await message.reply("synced!")
 
 
-@bot.command(name="balance", aliases=("bal", "view-money"))
+@bot.command(name="balance", aliases=("bal", "view-money", "ball"))
 async def bal_prefix(message, user: None | str = None):
     """Shows the balance of an user
-    USAGE: {prefix}bal (user); {prefix}balance (user)
+    USAGE: ?bal (user); ?balance (user)
 
     user: User you want to show balance of. If empty, the command shows yours balance.
     """
@@ -193,10 +243,27 @@ async def bal_slash(interaction, user: None | str = None):
     await operations.bal(interaction, user, bot)
 
 
+@bot.command(name="give", aliases=("gift",))
+async def give_prefix(msg, member: Member | int | None, amount: int):
+    """Gives a specified member a specified amount of your money.
+    USAGE: ?give @mention/[ID] [amount]; ?gift @mention/[ID] [amount]
+
+    @mention/ID: A mention (or an ID) of a member you want to give your money.
+    amount: The amount you want to give.
+    """
+    await operations.give_money(msg, member, amount)
+
+
+@bot.tree.command(name="give", description="Give someone your precious money :wah:")
+async def give_slash(interaction, member: Member, amount: int):
+    """Gives a specified member a specified amount of your money."""
+    await operations.give_money(interaction, member, amount)
+
+
 @bot.command(name="roulette", aliases=("rlt", "roulete"))
 async def rlt_prefix(message, space, bet):
     """Plays Roulette
-    USAGE: {prefix}rlt {space} {bet}
+    USAGE: ?rlt {space} {bet}
 
     space: On what you want to bet
     bet: what you want to bet
@@ -212,7 +279,7 @@ async def rlt_slash(interaction, space: str, bet: str):
 @bot.command(name="work")
 async def work_prefix(message):
     """Adds some money to your balance
-    USAGE: {prefix}work
+    USAGE: ?work
     """
     await earning.work(message)
 
@@ -233,8 +300,99 @@ async def delay_slash(msg, mode: str):
     await earning.delay(msg, mode)
 
 
-# Load environment variables
-load_dotenv()
+# normal bot stuff
+#############################################################################################################################################
+# minecraft stuff
+#
+
+async def run_rcon(command: str):
+    client = aiomcrcon.Client(
+        host=RCON_HOST,
+        port=RCON_PORT,
+        password=RCON_PASSWORD,
+    )
+
+    try:
+        await client.connect()
+        return await client.send_cmd(command)
+    finally:
+        await client.close()
+
+@bot.command(name="mc-run")
+async def mc_run(msg, *, command: str) -> None:
+    """Run a Minecraft console command through RCON."""
+    try:
+        response = await run_rcon(command)
+    except Exception as error:
+        await msg.reply(f"RCON failed: `{error}`")
+        return
+
+    response = response or "Command completed with no output."
+    await msg.reply(f"```text\n{response[:1900]}\n```")
+
+
+@bot.command(name="list-mc-players", aliases=("list-mc", "list-players", "lmp", "online-players"))
+async def players(ctx) -> None:
+    try:
+        response = await run_rcon("list")
+    except Exception as error:
+        await ctx.reply(f"RCON failed: `{error}`")
+        return
+
+    await ctx.reply(response or "No response.")
+
+
+async def watch_minecraft_chat() -> None:
+    await bot.wait_until_ready()
+
+    channel = bot.get_channel(CHAT_CHANNEL_ID)
+
+    if channel is None:
+        try:
+            channel = await bot.fetch_channel(CHAT_CHANNEL_ID)
+        except discord.DiscordException as error:
+            print(f"Could not access Discord channel: {error}")
+            return
+
+    try:
+        async with aiofiles.open(
+            MC_LOG_PATH,
+            mode="r",
+            encoding="utf-8",
+            errors="replace",
+        ) as log_file:
+            # Ignore old messages and start at the end.
+            await log_file.seek(0, 2)
+
+            while not bot.is_closed():
+                line = await log_file.readline()
+
+                if not line:
+                    await asyncio.sleep(0.2)
+                    continue
+
+                
+                match = MC_CHAT_PATTERN.search(line)
+
+                if not match:
+                    match2 = MC_CHAT_PATTERN2.search(line)
+                    if not match2:
+                        continue
+                    
+
+                player_name, content = match.groups() if match else match2.groups() if match2 else ("sth didnt work", "sth didnt work")
+                content = MC_FORMATTING_PATTERN.sub("", content)
+
+                await channel.send(
+                    f"**{discord.utils.escape_markdown(player_name)}:** {discord.utils.escape_markdown(content)}",
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+
+    except FileNotFoundError:
+        print(f"Minecraft log not found: {MC_LOG_PATH}")
+    except Exception as error:
+        print(f"Minecraft chat watcher failed: {error}")
+
 
 # Run the bot with token from environment variable
 if IS_STABLE:

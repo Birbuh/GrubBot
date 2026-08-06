@@ -69,9 +69,6 @@ async def on_message_edit(
 
 
 async def on_message(message: Any, bot: Any, mentions_spam_cache: Any):
-    if message.author.bot:  # Ignore bots
-        return
-
     # Skip all moderation checks if the user has the admin role
     if not check_for_perms(message.author):
         _id = message.author.id

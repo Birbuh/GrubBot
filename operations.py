@@ -1,6 +1,8 @@
 import json
 from typing import Any
 
+from discord.member import Member
+
 
 async def uid_to_name(bot: Any, uid: int) -> Any:
     return await bot.fetch_user(uid)
@@ -70,3 +72,35 @@ async def bal(message: Any, user: Any, bot: Any) -> None:
             await message.response.send_message(f"{user} {have_or_has} {u_money}$ at their balance")
         else:
             await message.response.send_message(f"{self_bal} poor {self_bal} {have_or_has} no money")
+
+
+async def give_money(msg, member: Member | int | None, amount: int | None):
+    """With this command, the riches give money to the poor.
+    
+    :param msg: The original message from prefix command or interaction from slash command
+    :param member: A member's mention or ID. Not. A. String. It will be None this way.
+    :param amount: An amount of the money to give.
+    """
+    try:
+        if not member:
+            await msg.reply("Please mention a member to give your money to.\nUsage: ?give @member [amount]")
+            return
+        if not amount: 
+            await msg.reply(f"Please specify an amount of your money to give {member}.\nUsage: ?give @member [amount]")
+            return
+        await add_or_del_money(msg.author.name, -amount)
+        if isinstance(member, int):
+            user = msg.guild.fetch_member(member)
+            await add_or_del_money(user.name, amount)
+        else:
+            await add_or_del_money(member.name, amount)
+        try:
+            await msg.reply("Money transferred successfully!")
+        except AttributeError:
+            await msg.response.send_message("Money transferred successfully!", ephemeral=True)
+    except Exception as e:    
+        try:
+            await msg.reply("An error occurred! Check the terminal output for more info.")
+        except AttributeError:
+            await msg.response.send_message("An error occurred! Check the terminal output for more info.")
+        print(e)
