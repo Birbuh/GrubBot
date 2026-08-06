@@ -339,7 +339,7 @@ async def mc_run(msg, *, command: str) -> None:
         await msg.reply("You don't have permission to use this command.")
         return
     try:
-        response = await run_rcon(command)
+        response = await run_rcon(command.removesuffix("\n"))
     except Exception as error:
         await msg.reply(f"RCON failed: `{error}`")
         return
