@@ -1,5 +1,5 @@
 discord
 cachetools
 dotenv
-mcrcon
+aiomcrcon
 aiofiles
