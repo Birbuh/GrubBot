@@ -276,6 +276,21 @@ async def rlt_slash(interaction, space: str, bet: str):
     await gambling.roulette(interaction, bet, space)
 
 
+@bot.command(name="blackjack", aliases=("bj",))
+async def blackjack_prefix(message, bet):
+    """Plays Blackjack
+    USAGE: ?blackjack {bet} / ?bj {bet}
+
+    bet: The amount you want to bet (an integer, or 'all'/'half').
+    """
+    await gambling.blackjack(message, bet)
+
+
+@bot.tree.command(name="blackjack", description="Play Blackjack")
+async def blackjack_slash(interaction, bet: str):
+    await gambling.blackjack(interaction, bet)
+
+
 @bot.command(name="work")
 async def work_prefix(message):
     """Adds some money to your balance
@@ -303,7 +318,7 @@ async def delay_slash(msg, mode: str):
 # normal bot stuff
 #############################################################################################################################################
 # minecraft stuff
-#
+
 
 async def run_rcon(command: str):
     client = aiomcrcon.Client(

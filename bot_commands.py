@@ -164,11 +164,14 @@ async def rules(msg: Any, rule: str | None = None) -> None:
 async def helpme(msg: Any, type_of_help: str | None = None):
     if type_of_help is None:
         if not check_for_perms(msg.author):
-            await msg.reply("Please mention what I need to help you with: rules, channel, roles, warns, balance, roulette, work, or delay.")
+            await msg.reply(
+                "Please mention what I need to help you with: rules, channel, roles, warns, "
+                "balance, roulette, blackjack, work, or delay."
+            )
         elif check_for_perms(msg.author):
             await msg.reply(
                 "Please mention what I need to help you with: rules, channel, roles, warns, "
-                "balance, roulette, work, or delay. Staff only: mute, info, warn, clear, purge."
+                "balance, roulette, blackjack, work, or delay. Staff only: mute, info, warn, clear, purge."
             )
     else:
         if not check_for_perms(msg.author):

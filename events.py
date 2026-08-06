@@ -96,5 +96,3 @@ async def on_message(message: Any, bot: Any, mentions_spam_cache: Any):
         is_spam = await spam(message)
         if is_spam:
             await automute(message, 60, "AUTOMOD: Automatically muted for spam.")
-    # Always process commands regardless of user role
-    await bot.process_commands(message)
