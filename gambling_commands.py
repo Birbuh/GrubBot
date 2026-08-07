@@ -191,10 +191,16 @@ async def blackjack(message: Any, bet: Any) -> None:
         user = message.user.name
     with open("money_lb.json", "r") as money_lb:
         try:
-            money: dict[str, int] = json.load(money_lb)
+            money: dict[str, dict[str, int]] = json.load(money_lb)
         except json.JSONDecodeError:
             money = {}
-    balance = money.get(user, 0)
+    try:
+        balance = money[user].get("cash", 0)
+    except KeyError:
+        try:
+            await message.reply("No money?")
+        except AttributeError:
+            await message.response.send_message("No money?", ephemeral=True)
     if balance <= 0:
         try:
             await message.reply("No money?")
@@ -273,22 +279,22 @@ async def roulette(message: Any, bet: Any, space: Any) -> None:
     num = random.randint(0, 36)
     with open("money_lb.json", "r") as money_lb:
         try:
-            money: dict[str, int] = json.load(money_lb)
+            money: dict[str, dict[str, int]] = json.load(money_lb)
         except json.JSONDecodeError:
             money = {}
-    if money[user] <= 0:
+    if money[user]["cash"] <= 0:
         try:
             await message.reply("No money?")
         except AttributeError:
             await message.response.send_message("No money?", ephemeral=True)
         return
     if bet == "all":
-        bet = money[user]
+        bet = money[user]["cash"]
     elif bet == "half":
-        bet = money[user] / 2
+        bet = money[user]["cash"] / 2
     else:
         bet = int(bet)
-    if bet > money[user]:
+    if bet > money[user]["cash"]:
         try:
             await message.reply("No money?")
         except AttributeError:

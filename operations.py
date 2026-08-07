@@ -7,7 +7,56 @@ from discord.member import Member
 async def uid_to_name(bot: Any, uid: int) -> Any:
     return await bot.fetch_user(uid)
 
-
+async def transfer_money(msg, amount: int | str, where: str) -> None:
+    """Func to transfer money
+    
+    :param msg: The original message from prefix command
+    :param amount: Money to transfer.
+    :param where: Where to transfer the money.
+    """
+    with open("money_lb.json", "r") as money_lb:
+        try:
+            money: dict[str, dict[str, int]] = json.load(money_lb)
+        except json.JSONDecodeError:
+            money = {}
+        try: 
+            if amount == "all":
+                if where in ["c", "cash"]:
+                    final_amount = money[msg.author.name]["bank"]
+                if where in ["b", "bank"]:
+                    final_amount = money[msg.author.name]["cash"]
+            elif amount == "half":
+                if where in ["c", "cash"]:
+                    final_amount = money[msg.author.name]["bank"] // 2
+                if where in ["b", "bank"]:
+                    final_amount = money[msg.author.name]["cash"] // 2
+            else:
+                if where in ["c", "cash"]:
+                    if int(amount) < money[msg.author.name]["bank"]:
+                        final_amount = int(amount)
+                    else: 
+                        await msg.reply("You don't have that much...")
+                if where in ["b", "bank"]:
+                    if int(amount) < money[msg.author.name]["cash"]:
+                        final_amount = int(amount)
+                    else: 
+                        await msg.reply("You don't have that much...")
+        except Exception:
+            await msg.reply("Something is wrong with the amount. Make sure it's either a non-negative integer, `all` or `half`.")
+        if where in ["c", "cash"]:
+            money[msg.author.name]["bank"] -= final_amount
+            money[msg.author.name]["cash"] += final_amount
+            await msg.reply(f"""Money transferred successfully! Your current balance: 
+                \ncash: {money[msg.author.name]["cash"]} \nbank: {money[msg.author.name]["bank"]}""")
+        elif where in ["bank", "b"]:
+            money[msg.author.name]["bank"] += final_amount
+            money[msg.author.name]["cash"] -= final_amount
+            await msg.reply(f"""Money transferred successfully! Your current balance: 
+                \ncash: {money[msg.author.name]["cash"]} \nbank: {money[msg.author.name]["bank"]}""")
+            
+    with open("money_lb.json", "w") as money_lb:
+        json.dump(money, money_lb)
+        
 async def add_or_del_money(user: str, new_money: int | float) -> None:
     """Func to add money
 
@@ -17,10 +66,15 @@ async def add_or_del_money(user: str, new_money: int | float) -> None:
     new_money = int(new_money)
     with open("money_lb.json", "r") as money_lb:
         try:
-            money: dict[str, int] = json.load(money_lb)
+            money: dict[str, dict[str, int]] = json.load(money_lb)
         except json.JSONDecodeError:
             money = {}
-        money[user] = money.get(user, 0) + new_money
+        try:
+            money[user]["cash"] += new_money
+        except KeyError:
+            money[user] = {}
+            money[user]["cash"] = new_money
+            money[user]["bank"] = 0 
     with open("money_lb.json", "w") as money_lb:
         json.dump(money, money_lb)
 
@@ -53,23 +107,25 @@ async def bal(message: Any, user: Any, bot: Any) -> None:
 
     with open("money_lb.json", "r") as money_lb:
         try:
-            money: dict[str, int] = json.load(money_lb)
+            money: dict[str, dict[str, int]] = json.load(money_lb)
         except json.JSONDecodeError:
             money = {}
     try:
-        u_money = money[user.name]
+        u_money_cash = money[user.name]["cash"]
+        u_money_bank = money[user.name]["bank"]
     except AttributeError:
-        u_money = money[user]
+        u_money_cash = money[user]["cash"]
+        u_money_bank = money[user]["bank"]
     except KeyError:
         failed = True
     try:
         if not failed:
-            await message.reply(f"{user} {have_or_has} {u_money}$ at their balance")
+            await message.reply(f"{user} {have_or_has} {u_money_cash}$ in cash and {u_money_bank}$ in their bank account.")
         else:
             await message.reply(f"{self_bal} poor {self_bal} {have_or_has} no money")
     except AttributeError:
         if not failed:
-            await message.response.send_message(f"{user} {have_or_has} {u_money}$ at their balance")
+            await message.response.send_message(f"{user} {have_or_has} {u_money_cash}$ in cash and {u_money_bank}$ in their bank account.")
         else:
             await message.response.send_message(f"{self_bal} poor {self_bal} {have_or_has} no money")
 

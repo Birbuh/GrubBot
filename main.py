@@ -241,6 +241,16 @@ async def bal_slash(interaction, user: None | str = None):
     await operations.bal(interaction, user, bot)
 
 
+@bot.command(aliases=("wd", "with"))
+async def withdraw(msg, amount: int | str):
+    await operations.transfer_money(msg, amount, "cash")
+
+
+@bot.command(aliases=("dep",))
+async def deposit(msg, amount: int | str):
+    await operations.transfer_money(msg, amount, "bank")
+    
+
 # @bot.command(name="give", aliases=("gift",))
 # async def give_prefix(msg, member: Member | int | None, amount: int):
 #     """Gives a specified member a specified amount of your money.
