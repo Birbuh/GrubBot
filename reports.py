@@ -13,6 +13,7 @@ report_message_actions = {}
 
 
 def check_if_muted(member: Any):
+    """Return the member's muted role, if present."""
     return discord.utils.get(member.roles, name="muted")
 
 
@@ -88,6 +89,7 @@ async def report(
 
 
 async def roles(msg: Any, member: Any = None):
+    """Reply with a member's non-default role names."""
     if member is None:
         member = msg.author
     roles = [role.name for role in member.roles if role.name != "@everyone"]
@@ -107,6 +109,7 @@ async def rules(msg: Any, rule: str | None = None, rules_dict: dict[str, str] = 
 
 
 async def on_raw_reaction_add(payload, bot: Any, mod_logs: dict[str, Any] = {}):
+    """Apply the moderation action selected on a pending report reaction."""
     if payload.message_id not in report_message_actions:
         return
 
@@ -150,6 +153,7 @@ async def on_raw_reaction_add(payload, bot: Any, mod_logs: dict[str, Any] = {}):
 
         # Schedule unmute
         async def unmute_later():
+            """Remove the approved report mute after its three-hour timeout."""
             await asyncio.sleep(10800)
             if check_if_muted(reported_user):
                 await reported_user.remove_roles(mute_role)
@@ -180,6 +184,7 @@ async def on_raw_reaction_add(payload, bot: Any, mod_logs: dict[str, Any] = {}):
 
         # Schedule unmute
         async def unmute_later():
+            """Remove the false-report mute after its six-hour timeout."""
             await asyncio.sleep(10800 * 2)
             if check_if_muted(reporter):
                 await reporter.remove_roles(mute_role)

@@ -5,6 +5,7 @@ from discord.member import Member
 
 
 async def uid_to_name(bot: Any, uid: int) -> Any:
+    """Fetch and return the Discord user associated with an ID."""
     return await bot.fetch_user(uid)
 
 async def transfer_money(msg, amount: int | str, where: str) -> None:

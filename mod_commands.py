@@ -65,6 +65,7 @@ async def clear_warns(msg: Any, member: Any = None):
 
 
 async def send_msg(msg: Any, channel_name: str | None = None, *, content: str | None = None) -> None:
+    """Send staff-provided content to a named text channel."""
     # Check if all parameters were provided
     if channel_name is None or content is None:
         await msg.reply("Usage: !send-msg <channel_name> <content>")
@@ -86,6 +87,7 @@ async def send_msg(msg: Any, channel_name: str | None = None, *, content: str | 
 
 
 async def info(msg: Any, member: Any):
+    """Reply with staff-visible member details, roles, and warnings."""
     if not check_for_perms(msg.author):
         await msg.reply("You don't have permission to use this command.")
         return
@@ -94,7 +96,6 @@ async def info(msg: Any, member: Any):
 
     name = member.name
 
-    """Sends user info when you do !info @user"""
     roles = [role.name for role in member.roles if role.name != "@everyone"]
     roles_list = ", ".join(roles) if roles else "No roles"
     try:
@@ -155,6 +156,7 @@ async def unmute(
     bot: Any = None,
     mod_logs: dict[str, Any] = {},
 ):
+    """Remove the mute role from a member when requested by staff."""
     if member is None:
         await msg.reply("Please mention a member to unmute. Usage: !unmute @member [reason]")
         return
@@ -178,6 +180,7 @@ async def unmute(
 
 
 async def kick(msg: Any, member: Any, reason: str | None = None):
+    """Remove a member from the server and notify them of the reason."""
     await member.kick(reason=reason)
     await msg.reply(f"User kicked for {reason}")
     await member.dm_channel.send(f"You've been kicked from Razerchess server for {reason}!")
@@ -265,6 +268,7 @@ async def warn(
 
             # Schedule unmute
             async def unmute_later():
+                """Remove the automatic warning mute after its timeout."""
                 await asyncio.sleep(timeout)
                 if check_if_muted(member):
                     await member.remove_roles(mute_role)
@@ -301,6 +305,7 @@ async def mute(
     bot: Any = None,
     mod_logs: dict[str, Any] = {},
 ):
+    """Temporarily mute a member for a staff-specified duration."""
     if check_for_perms(msg.author):  # Checking if the user is from staff (has permissions).
         try:
             if not member:
@@ -334,6 +339,7 @@ async def mute(
 
                     # Schedule unmute
                     async def unmute_later():
+                        """Remove the manual mute role when the timeout ends."""
                         await asyncio.sleep(timeout)
                         if check_if_muted(member):
                             await member.remove_roles(mute_role)
@@ -374,6 +380,7 @@ async def mute(
 
 
 async def ban(msg, bot: commands.Bot, member: Member | int | None, reason: str | None = None, mod_logs: dict[str, Any] = {}):
+    """Ban a member or user ID when the caller has staff permissions."""
     if check_for_perms(msg.author):  # Checking if the user is from staff (has permissions).
         try:
             print(member, type(member))
@@ -430,6 +437,7 @@ async def ban(msg, bot: commands.Bot, member: Member | int | None, reason: str |
 
 
 async def unban(msg, bot: commands.Bot, user_id: int | None, reason=None, mod_logs={}):
+    """Unban a user ID when the caller has staff permissions."""
     if check_for_perms(msg.author):  # Checking if the user is from staff (has permissions).
         try:
             if not user_id:

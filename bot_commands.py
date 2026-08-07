@@ -47,6 +47,7 @@ user_warns_count = {}
 
 # Function finding mentions.
 def mentions_spam(text: str):
+    """Count at-sign characters in a message as a mention-spam signal."""
     words: list[str] = text.split()
     mentions = sum(word.count("@") for word in words)
     return mentions
@@ -97,12 +98,14 @@ def is_message_too_long(text, max_chars=200):
 
 # Function to check for long words without spaces
 def contains_long_unspaced_text(text: str, max_length=50):
+    """Return whether non-URL text contains a word longer than the limit."""
     if "http" not in text or ".com" not in text:
         words = text.split()  # Split the message into words
         return any(len(word) > max_length for word in words)
 
 
 async def automute(msg: Any, time, reason, bot: Any = None, mod_logs: Any = None):
+    """Temporarily assign the mute role after an automatic moderation action."""
     muted = check_if_muted(msg.author)
     if muted:
         await msg.channel.send(content="Nice try, but you are muted already. lmfao.")
@@ -127,6 +130,7 @@ async def automute(msg: Any, time, reason, bot: Any = None, mod_logs: Any = None
 
 
 async def warns_info(msg: Any):
+    """Reply with the caller's weekly and persisted warning totals."""
     member = msg.author
     name = member.name
 
@@ -150,11 +154,13 @@ async def warns_info(msg: Any):
 
 
 async def roles(msg: Any, member: Any = None):
+    """Reply with the roles assigned to a member."""
     user_roles = member.roles
     await msg.reply(f"{member.name}'s roles: \n\n{user_roles}")
 
 
 async def rules(msg: Any, rule: str | None = None) -> None:
+    """Reply with all rules or the requested individual rule."""
     if rule is None:
         await msg.reply(str(all_rules))
     else:
@@ -162,6 +168,7 @@ async def rules(msg: Any, rule: str | None = None) -> None:
 
 
 async def helpme(msg: Any, type_of_help: str | None = None):
+    """Reply with general or topic-specific command help for the caller."""
     if type_of_help is None:
         if not check_for_perms(msg.author):
             await msg.reply(

@@ -13,14 +13,17 @@ SUITS = ["♠", "♥", "♦", "♣"]
 
 
 def draw_card() -> tuple[str, str]:
+    """Return a randomly selected playing card as rank and suit."""
     return (random.choice(RANKS), random.choice(SUITS))
 
 
 def card_str(card: tuple[str, str]) -> str:
+    """Format a card tuple as a compact rank-and-suit string."""
     return f"{card[0]}{card[1]}"
 
 
 def hand_value(hand: list[tuple[str, str]]) -> int:
+    """Calculate a blackjack hand total, valuing aces optimally."""
     total = 0
     aces = 0
     for rank, _ in hand:
@@ -38,6 +41,7 @@ def hand_value(hand: list[tuple[str, str]]) -> int:
 
 
 def hand_str(hand: list[tuple[str, str]], hidden: bool = False) -> str:
+    """Format a blackjack hand, optionally hiding its second card."""
     if hidden:
         return f"{card_str(hand[0])} ??"
     return " ".join(card_str(c) for c in hand)
@@ -51,6 +55,7 @@ def build_embed(
     state: str,
     double_available: bool = False,
 ) -> discord.Embed:
+    """Build the blackjack status embed for the current game state."""
     colors = {
         "playing": discord.Color.blue(),
         "win": discord.Color.green(),
@@ -87,7 +92,10 @@ def build_embed(
 
 
 class BlackjackView(ui.View):
+    """Interactive Discord view that manages a single blackjack hand."""
+
     def __init__(self, user: str, bet: int, player_hand: list[tuple[str, str]], dealer_hand: list[tuple[str, str]], can_double: bool):
+        """Initialize the game state and optionally expose the double button."""
         super().__init__(timeout=60)
         self.user = user
         self.bet = bet
@@ -101,6 +109,7 @@ class BlackjackView(ui.View):
 
     @ui.button(label="Hit", style=discord.ButtonStyle.primary, custom_id="hit")
     async def hit(self, interaction: discord.Interaction, button: ui.Button) -> None:
+        """Draw a card for the player and update or settle the game."""
         if interaction.user.name != self.user:
             await interaction.response.send_message("This isn't your game!", ephemeral=True)
             return
@@ -117,6 +126,7 @@ class BlackjackView(ui.View):
 
     @ui.button(label="Stand", style=discord.ButtonStyle.secondary, custom_id="stand")
     async def stand(self, interaction: discord.Interaction, button: ui.Button) -> None:
+        """Finish the game without drawing another player card."""
         if interaction.user.name != self.user:
             await interaction.response.send_message("This isn't your game!", ephemeral=True)
             return
@@ -124,6 +134,7 @@ class BlackjackView(ui.View):
 
     @ui.button(label="Double", style=discord.ButtonStyle.success, custom_id="double")
     async def double(self, interaction: discord.Interaction, button: ui.Button) -> None:
+        """Double the wager, draw one final card, and settle the game."""
         if interaction.user.name != self.user:
             await interaction.response.send_message("This isn't your game!", ephemeral=True)
             return
@@ -141,11 +152,13 @@ class BlackjackView(ui.View):
         await self.finish(interaction)
 
     def dealer_play(self) -> int:
+        """Draw dealer cards until the dealer reaches at least 17."""
         while hand_value(self.dealer_hand) < 17:
             self.dealer_hand.append(draw_card())
         return hand_value(self.dealer_hand)
 
     async def finish(self, interaction: Any) -> None:
+        """Resolve the hand, update balances, and disable game controls."""
         self.settled = True
         for child in self.children:
             if isinstance(child, ui.Button):
@@ -174,6 +187,7 @@ class BlackjackView(ui.View):
         self.stop()
 
     async def on_timeout(self) -> None:
+        """Settle an unresolved game when the interactive view expires."""
         if self.settled:
             return
         await self.finish(None)

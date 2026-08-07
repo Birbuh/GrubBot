@@ -17,6 +17,7 @@ async def on_message_delete(
     bot: Any = None,
     mod_logs: dict[str, Any] = {},
 ):
+    """Log a deleted Discord message and its attachments to moderation logs."""
     embed = discord.Embed(
         title="Deleted message!",
         description=(f"Deleted {msg.author.mention} message: \n {msg.content} \n \n Channel: {msg.channel.mention}"),
@@ -57,6 +58,7 @@ async def on_message_edit(
     after: Any,
     mod_logs: dict[str, Any] = {},
 ):
+    """Log a non-bot message edit outside the moderation-log channels."""
     if not before.author.bot:
         if before.channel.id not in MOD_LOG_IDS:
             edited_msg_log = discord.Embed(
@@ -69,6 +71,7 @@ async def on_message_edit(
 
 
 async def on_message(message: Any, bot: Any, mentions_spam_cache: Any):
+    """Run automatic moderation checks for an incoming Discord message."""
     # Skip all moderation checks if the user has the admin role
     if not check_for_perms(message.author):
         _id = message.author.id

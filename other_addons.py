@@ -53,9 +53,11 @@ async def delay_func(func, timeout, **kwargs):
 
 
 def check_for_perms(member: Any):
+    """Return whether a member has the configured administrator role."""
     if any(role.id == ADMIN_ID for role in member.roles):
         return True
 
 
 def check_if_muted(member: Any):
+    """Return the member's muted role, if present."""
     return discord.utils.get(member.roles, name="muted")
