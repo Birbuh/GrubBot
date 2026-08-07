@@ -241,21 +241,21 @@ async def bal_slash(interaction, user: None | str = None):
     await operations.bal(interaction, user, bot)
 
 
-@bot.command(name="give", aliases=("gift",))
-async def give_prefix(msg, member: Member | int | None, amount: int):
-    """Gives a specified member a specified amount of your money.
-    USAGE: ?give @mention/[ID] [amount]; ?gift @mention/[ID] [amount]
+# @bot.command(name="give", aliases=("gift",))
+# async def give_prefix(msg, member: Member | int | None, amount: int):
+#     """Gives a specified member a specified amount of your money.
+#     USAGE: ?give @mention/[ID] [amount]; ?gift @mention/[ID] [amount]
 
-    @mention/ID: A mention (or an ID) of a member you want to give your money.
-    amount: The amount you want to give.
-    """
-    await operations.give_money(msg, member, amount)
+#     @mention/ID: A mention (or an ID) of a member you want to give your money.
+#     amount: The amount you want to give.
+#     """
+#     await operations.give_money(msg, member, amount)
 
 
-@bot.tree.command(name="give", description="Give someone your precious money :wah:")
-async def give_slash(interaction, member: Member, amount: int):
-    """Gives a specified member a specified amount of your money."""
-    await operations.give_money(interaction, member, amount)
+# @bot.tree.command(name="give", description="Give someone your precious money :wah:")
+# async def give_slash(interaction, member: Member, amount: int):
+#     """Gives a specified member a specified amount of your money."""
+#     await operations.give_money(interaction, member, amount)
 
 
 @bot.command(name="roulette", aliases=("rlt", "roulete"))
@@ -391,6 +391,7 @@ async def watch_minecraft_chat() -> None:
                 match = MC_CHAT_PATTERN.search(line)
 
                 if not match:
+                    
                     match2 = MC_CHAT_PATTERN2.search(line)
                     if not match2:
                         continue
